@@ -1,87 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<search>
-  <entry>
-    <title>随机初始化单位向量</title>
-    <url>/blog/2020/08/30/randomInitializationVector/</url>
-    <content><![CDATA[<p>在改MVS的一些算法当中，随机初始化是一个非常常用的步骤。在基于patch match的mvs算法中，需要去构造一个深度平面，这个平面由深度以及平面单位法向量构成。在随机初始化这个平面单位法向量的时候，碰到了一些很有趣的问题以及一些思考，在此以做记录。</p>
-<h1 id="一种错误想法"><a href="#一种错误想法" class="headerlink" title="一种错误想法"></a>一种错误想法</h1><p>我相信一拿到这个问题的时候，许多人跟我一样可能会这样做，分别随机在-1到1之间sample出法向量的x，y，z值，然后为了满足单位长度的要求再除以向量的模长。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line"><span class="function"><span class="built_in">std</span>::uniform_real_distribution&lt;<span class="keyword">double</span>&gt; <span class="title">dis</span><span class="params">(<span class="number">-1</span>, <span class="number">1</span>)</span></span>;</span><br><span class="line"><span class="comment">//get x y z of a vector</span></span><br><span class="line"><span class="keyword">double</span> x = dis(rng);</span><br><span class="line"><span class="keyword">double</span> y = dis(rng);</span><br><span class="line"><span class="keyword">double</span> z = dis(rng);</span><br><span class="line"><span class="keyword">double</span> norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line">x /= norm;</span><br><span class="line">y /= norm;</span><br><span class="line">z /= norm;</span><br></pre></td></tr></table></figure>
-
-<p>但是稍加思索其实就会发觉这个想法其实是错误的，在独立随机三个坐标值时，其实是在一个以原点为中心的一个2*2*2的立方体中随机取点，这个点在这个立方体里的分布是均匀的，紧接着再将这个点投影到以原点为中心，半径为1的单位球面上。显然这样的投影是不均匀的，因为这个单位球和立方体相切，立方体除了这个单位球还多了四个边角的空间。虽然这个方法不正确，但是我们先画出这种方法最后出来的三坐标分量的概率分布，以下是用用上述方法取了10000个点，三坐标分量的分布直方图</p>
-<table>
-<thead>
-<tr>
-<th align="center">x分量</th>
-<th align="center">y分量</th>
-<th align="center">z分量</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92simvouj20x60pwmyc.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92szlc58j20wi0pqmyc.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92tk8bqlj20wy0paab8.jpg" width="400px"/></td>
-</tr>
-</tbody></table>
-<p>我们可以看到，三个坐标分量的分布都是一样的，但是经过我们这么折腾，原来均匀分布的变量就变成了非均匀分布。</p>
-<h1 id="正解"><a href="#正解" class="headerlink" title="正解"></a>正解</h1><p>那么如何去实现呢，其实在前文当中答案已经呼之欲出了，既然我们知道问题在于多出来的四个角，那我们直接把它去掉不就行了</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line"><span class="function"><span class="built_in">std</span>::uniform_real_distribution&lt;<span class="keyword">double</span>&gt; <span class="title">dis</span><span class="params">(<span class="number">-1</span>, <span class="number">1</span>)</span></span>;</span><br><span class="line"><span class="comment">//get x y z of a vector</span></span><br><span class="line"><span class="keyword">double</span> x = dis(rng);</span><br><span class="line"><span class="keyword">double</span> y = dis(rng);</span><br><span class="line"><span class="keyword">double</span> z = dis(rng);</span><br><span class="line"><span class="keyword">double</span> norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line"><span class="keyword">while</span>(norm &gt; <span class="number">1</span>)&#123;</span><br><span class="line">  x = dis(rng); y = dis(rng); z = dis(rng);</span><br><span class="line">  norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line">&#125;</span><br><span class="line">x /= norm;</span><br><span class="line">y /= norm;</span><br><span class="line">z /= norm;</span><br></pre></td></tr></table></figure>
-
-<p>下面是按照这种方法的三坐标分量的分布直方图</p>
-<table>
-<thead>
-<tr>
-<th align="center">x分量</th>
-<th align="center">y分量</th>
-<th align="center">z分量</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93aegwsfj20x20p83zl.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93apo1bij20wi0pugmp.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93b44a2fj20ws0q2dgx.jpg" width="400px"/></td>
-</tr>
-</tbody></table>
-<p>居然是均匀分布，也就是说我们初始的想法是对的，这样一个随机分布的向量，三个分量确实也是均匀分布的。这一点也可以用微积分证明。在计算球体表面积时，有以下过程，计算的是一个单位圆（半圆）绕x轴扫过的面积</p>
-<img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi94nsb1onj216212ojv1.jpg" width="400px"/>
-
-<p>即球体的表面积可以表示为<br>$$<br>S = \int 2\pi y\sqrt{\Delta x^2 + \Delta y^2}<br>\\<br>S = 2\pi \int_{r}^{r} \sqrt{r^2 - x^2} \sqrt{1 + \frac{\Delta y^2}{\Delta x^2}} dx<br>$$</p>
-<p>由$x$和$y$之间的关系$y = \sqrt{r^2-x^2}$可得，$\frac{\Delta y}{\Delta x} = \frac{-x}{\sqrt{r^2 - x^2}}$，将其带入上式可得<br>$$S = 2\pi \int_{-r}^{r} \sqrt{r^2 - x^2} \sqrt{1 + \frac{x^2}{r^2-x^2}} dx \\ S = 2\pi \int_{-r}^{r} r dx$$<br>所以可以看出这个积分其实跟$x$没有关系，换句话说，在$x$的任一取值下，$\Delta x$囊括的球面积都是一样的，所以各个指向均匀分布的单位向量，其三坐标是在-1到1之间均匀分布的。</p>
-<h1 id="其他方法"><a href="#其他方法" class="headerlink" title="其他方法"></a>其他方法</h1><h2 id="高斯分布构造"><a href="#高斯分布构造" class="headerlink" title="高斯分布构造"></a>高斯分布构造</h2><p>和前面的方法差不多的想法，只是这次我们用标准高斯分布（正态分布）来构造三个坐标分量，这样构造出来的点在空间中的状态就类似于电子云，以原点是中心对称的。不过好处在于，这次不用像前述方法去掉在单位球以外的点。接着就和前述一样，将随机出来的点投影到单位球面上</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="built_in">std</span>::normal_distribution&lt;&gt; dist; <span class="comment">// mu: 0 sigma: 1</span></span><br><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line">plane-&gt;x = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line">plane-&gt;y = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line"><span class="keyword">float</span> norm = sqrtf(plane-&gt;x * plane-&gt;x + plane-&gt;y * plane-&gt;y + plane-&gt;z * plane-&gt;z);</span><br><span class="line">plane-&gt;x = plane-&gt;x / norm;</span><br><span class="line">plane-&gt;y = plane-&gt;y / norm;</span><br><span class="line">plane-&gt;z = plane-&gt;z / norm;</span><br></pre></td></tr></table></figure>
-
-<h2 id="Marsaglia方法"><a href="#Marsaglia方法" class="headerlink" title="Marsaglia方法"></a>Marsaglia方法</h2><p>这种方法较为tricky，我暂时没有想明白具体的数学原理，在这留个坑，希望以后能补上。</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">float</span> q1, q2, S = <span class="number">2.f</span>;</span><br><span class="line"><span class="keyword">while</span> (S &gt;= <span class="number">1.0f</span>) &#123;</span><br><span class="line">	q1 = curand_between(ls, <span class="number">-1.0f</span>, <span class="number">1.0f</span>); <span class="comment">//一个cuda的随机取值函数，这里是随机从-1到1取值，意会就好不用在意细节</span></span><br><span class="line">  q2 = curand_between(ls, <span class="number">-1.0f</span>, <span class="number">1.0f</span>); </span><br><span class="line">  S = q1 * q1 + q2 * q2; </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">float</span> sq = sqrtf(<span class="number">1.0f</span> - S);</span><br><span class="line">plane-&gt;x = <span class="number">2.0f</span> * q1 * sq;</span><br><span class="line">plane-&gt;y = <span class="number">2.0f</span> * q2 * sq;</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> - <span class="number">2.0f</span> * S;</span><br></pre></td></tr></table></figure>
-
-<h1 id="其他错误的尝试"><a href="#其他错误的尝试" class="headerlink" title="其他错误的尝试"></a>其他错误的尝试</h1><h2 id="随机取值两个欧拉角构造向量"><a href="#随机取值两个欧拉角构造向量" class="headerlink" title="随机取值两个欧拉角构造向量"></a>随机取值两个欧拉角构造向量</h2><p>在得到上述正解之前，其实还误碰了一些错误的构造方式，放在这里以提醒。</p>
-<p>在单位球上的向量，自然而然会想到用欧拉角来构造，去掉一个没用的row角，剩下的pitch和yaw角就够用了。两个角度分别用alpha和beta来表示，如示意图，alpha的取值范围是$(0,2\pi)$，beta的取值范围是$(-\frac{\pi}{2},\frac{\pi}{2})$。</p>
-<img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi40p2yahfj21ay15agrr.jpg" width="400px" />
-
-<p>那么这个单位向量就构造出来了</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">float</span> Alpha, Beta;</span><br><span class="line">Alpha = curand_between(ls, <span class="number">0f</span>, <span class="number">2</span>*M_PI);</span><br><span class="line">Beta = curand_between(ls, -M_PI/<span class="number">2.0f</span>, M_PI/<span class="number">2.0f</span>);</span><br><span class="line">plane-&gt;x = <span class="number">1.0f</span> * <span class="built_in">cos</span>(Beta) * <span class="built_in">sin</span>(Alpha);</span><br><span class="line">plane-&gt;y = <span class="number">1.0f</span> * <span class="built_in">cos</span>(Beta) * <span class="built_in">cos</span>(Alpha);</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> * <span class="built_in">sin</span>(Beta);</span><br></pre></td></tr></table></figure>
-
-<p>首先，从结果上看，得出来的三坐标分量就是错误的</p>
-<table>
-<thead>
-<tr>
-<th align="center">x分量</th>
-<th align="center">y分量</th>
-<th align="center">z分量</th>
-</tr>
-</thead>
-<tbody><tr>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c2glffxj20wy0pomyg.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c2rnv96j20ws0pwmyg.jpg" width="400px"/></td>
-<td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c39g1ayj20wo0q6759.jpg" width="400px"/></td>
-</tr>
-</tbody></table>
-<p>其次，还是可以通过确认单位alpha单位beta围的面积是否是不变的，来确认这样的取值是能够构造指向均匀分布的单位向量。答案是否定的，可以很清楚地看到，当alpha固定，beta越靠近0，$\Delta alpha, \Delta beta$围的面积越大。</p>
-]]></content>
+<search> 
+  
+  
+    
+    <entry>
+      <title>随机初始化单位向量</title>
+      <link href="/blog/2020/08/30/randomInitializationVector/"/>
+      <url>/blog/2020/08/30/randomInitializationVector/</url>
+      
+        <content type="html"><![CDATA[<p>在改MVS的一些算法当中，随机初始化是一个非常常用的步骤。在基于patch match的mvs算法中，需要去构造一个深度平面，这个平面由深度以及平面单位法向量构成。在随机初始化这个平面单位法向量的时候，碰到了一些很有趣的问题以及一些思考，在此以做记录。</p><h1 id="一种错误想法"><a href="#一种错误想法" class="headerlink" title="一种错误想法"></a>一种错误想法</h1><p>我相信一拿到这个问题的时候，许多人跟我一样可能会这样做，分别随机在-1到1之间sample出法向量的x，y，z值，然后为了满足单位长度的要求再除以向量的模长。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line"><span class="function"><span class="built_in">std</span>::uniform_real_distribution&lt;<span class="keyword">double</span>&gt; <span class="title">dis</span><span class="params">(<span class="number">-1</span>, <span class="number">1</span>)</span></span>;</span><br><span class="line"><span class="comment">//get x y z of a vector</span></span><br><span class="line"><span class="keyword">double</span> x = dis(rng);</span><br><span class="line"><span class="keyword">double</span> y = dis(rng);</span><br><span class="line"><span class="keyword">double</span> z = dis(rng);</span><br><span class="line"><span class="keyword">double</span> norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line">x /= norm;</span><br><span class="line">y /= norm;</span><br><span class="line">z /= norm;</span><br></pre></td></tr></table></figure><p>但是稍加思索其实就会发觉这个想法其实是错误的，在独立随机三个坐标值时，其实是在一个以原点为中心的一个2*2*2的立方体中随机取点，这个点在这个立方体里的分布是均匀的，紧接着再将这个点投影到以原点为中心，半径为1的单位球面上。显然这样的投影是不均匀的，因为这个单位球和立方体相切，立方体除了这个单位球还多了四个边角的空间。虽然这个方法不正确，但是我们先画出这种方法最后出来的三坐标分量的概率分布，以下是用用上述方法取了10000个点，三坐标分量的分布直方图</p><table><thead><tr><th align="center">x分量</th><th align="center">y分量</th><th align="center">z分量</th></tr></thead><tbody><tr><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92simvouj20x60pwmyc.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92szlc58j20wi0pqmyc.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi92tk8bqlj20wy0paab8.jpg" width="400px"/></td></tr></tbody></table><p>我们可以看到，三个坐标分量的分布都是一样的，但是经过我们这么折腾，原来均匀分布的变量就变成了非均匀分布。</p><h1 id="正解"><a href="#正解" class="headerlink" title="正解"></a>正解</h1><p>那么如何去实现呢，其实在前文当中答案已经呼之欲出了，既然我们知道问题在于多出来的四个角，那我们直接把它去掉不就行了</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line"><span class="function"><span class="built_in">std</span>::uniform_real_distribution&lt;<span class="keyword">double</span>&gt; <span class="title">dis</span><span class="params">(<span class="number">-1</span>, <span class="number">1</span>)</span></span>;</span><br><span class="line"><span class="comment">//get x y z of a vector</span></span><br><span class="line"><span class="keyword">double</span> x = dis(rng);</span><br><span class="line"><span class="keyword">double</span> y = dis(rng);</span><br><span class="line"><span class="keyword">double</span> z = dis(rng);</span><br><span class="line"><span class="keyword">double</span> norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line"><span class="keyword">while</span>(norm &gt; <span class="number">1</span>)&#123;</span><br><span class="line">  x = dis(rng); y = dis(rng); z = dis(rng);</span><br><span class="line">  norm = <span class="built_in">sqrt</span>(x*x + y*y + z*z);</span><br><span class="line">&#125;</span><br><span class="line">x /= norm;</span><br><span class="line">y /= norm;</span><br><span class="line">z /= norm;</span><br></pre></td></tr></table></figure><p>下面是按照这种方法的三坐标分量的分布直方图</p><table><thead><tr><th align="center">x分量</th><th align="center">y分量</th><th align="center">z分量</th></tr></thead><tbody><tr><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93aegwsfj20x20p83zl.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93apo1bij20wi0pugmp.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi93b44a2fj20ws0q2dgx.jpg" width="400px"/></td></tr></tbody></table><p>居然是均匀分布，也就是说我们初始的想法是对的，这样一个随机分布的向量，三个分量确实也是均匀分布的。这一点也可以用微积分证明。在计算球体表面积时，有以下过程，计算的是一个单位圆（半圆）绕x轴扫过的面积</p><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi94nsb1onj216212ojv1.jpg" width="400px"/><p>即球体的表面积可以表示为<br>$$<br>S = \int 2\pi y\sqrt{\Delta x^2 + \Delta y^2}<br>\\<br>S = 2\pi \int_{r}^{r} \sqrt{r^2 - x^2} \sqrt{1 + \frac{\Delta y^2}{\Delta x^2}} dx<br>$$</p><p>由$x$和$y$之间的关系$y = \sqrt{r^2-x^2}$可得，$\frac{\Delta y}{\Delta x} = \frac{-x}{\sqrt{r^2 - x^2}}$，将其带入上式可得<br>$$S = 2\pi \int_{-r}^{r} \sqrt{r^2 - x^2} \sqrt{1 + \frac{x^2}{r^2-x^2}} dx \\ S = 2\pi \int_{-r}^{r} r dx$$<br>所以可以看出这个积分其实跟$x$没有关系，换句话说，在$x$的任一取值下，$\Delta x$囊括的球面积都是一样的，所以各个指向均匀分布的单位向量，其三坐标是在-1到1之间均匀分布的。</p><h1 id="其他方法"><a href="#其他方法" class="headerlink" title="其他方法"></a>其他方法</h1><h2 id="高斯分布构造"><a href="#高斯分布构造" class="headerlink" title="高斯分布构造"></a>高斯分布构造</h2><p>和前面的方法差不多的想法，只是这次我们用标准高斯分布（正态分布）来构造三个坐标分量，这样构造出来的点在空间中的状态就类似于电子云，以原点是中心对称的。不过好处在于，这次不用像前述方法去掉在单位球以外的点。接着就和前述一样，将随机出来的点投影到单位球面上</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">std</span>::normal_distribution&lt;&gt; dist; <span class="comment">// mu: 0 sigma: 1</span></span><br><span class="line"><span class="built_in">std</span>::random_device rd;</span><br><span class="line"><span class="built_in">std</span>::default_random_engine rng &#123;rd()&#125;;</span><br><span class="line">plane-&gt;x = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line">plane-&gt;y = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> * dist(rng);</span><br><span class="line"><span class="keyword">float</span> norm = sqrtf(plane-&gt;x * plane-&gt;x + plane-&gt;y * plane-&gt;y + plane-&gt;z * plane-&gt;z);</span><br><span class="line">plane-&gt;x = plane-&gt;x / norm;</span><br><span class="line">plane-&gt;y = plane-&gt;y / norm;</span><br><span class="line">plane-&gt;z = plane-&gt;z / norm;</span><br></pre></td></tr></table></figure><h2 id="Marsaglia方法"><a href="#Marsaglia方法" class="headerlink" title="Marsaglia方法"></a>Marsaglia方法</h2><p>这种方法较为tricky，我暂时没有想明白具体的数学原理，在这留个坑，希望以后能补上。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> q1, q2, S = <span class="number">2.f</span>;</span><br><span class="line"><span class="keyword">while</span> (S &gt;= <span class="number">1.0f</span>) &#123;</span><br><span class="line">q1 = curand_between(ls, <span class="number">-1.0f</span>, <span class="number">1.0f</span>); <span class="comment">//一个cuda的随机取值函数，这里是随机从-1到1取值，意会就好不用在意细节</span></span><br><span class="line">  q2 = curand_between(ls, <span class="number">-1.0f</span>, <span class="number">1.0f</span>); </span><br><span class="line">  S = q1 * q1 + q2 * q2; </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">float</span> sq = sqrtf(<span class="number">1.0f</span> - S);</span><br><span class="line">plane-&gt;x = <span class="number">2.0f</span> * q1 * sq;</span><br><span class="line">plane-&gt;y = <span class="number">2.0f</span> * q2 * sq;</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> - <span class="number">2.0f</span> * S;</span><br></pre></td></tr></table></figure><h1 id="其他错误的尝试"><a href="#其他错误的尝试" class="headerlink" title="其他错误的尝试"></a>其他错误的尝试</h1><h2 id="随机取值两个欧拉角构造向量"><a href="#随机取值两个欧拉角构造向量" class="headerlink" title="随机取值两个欧拉角构造向量"></a>随机取值两个欧拉角构造向量</h2><p>在得到上述正解之前，其实还误碰了一些错误的构造方式，放在这里以提醒。</p><p>在单位球上的向量，自然而然会想到用欧拉角来构造，去掉一个没用的row角，剩下的pitch和yaw角就够用了。两个角度分别用alpha和beta来表示，如示意图，alpha的取值范围是$(0,2\pi)$，beta的取值范围是$(-\frac{\pi}{2},\frac{\pi}{2})$。</p><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi40p2yahfj21ay15agrr.jpg" width="400px" /><p>那么这个单位向量就构造出来了</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">float</span> Alpha, Beta;</span><br><span class="line">Alpha = curand_between(ls, <span class="number">0f</span>, <span class="number">2</span>*M_PI);</span><br><span class="line">Beta = curand_between(ls, -M_PI/<span class="number">2.0f</span>, M_PI/<span class="number">2.0f</span>);</span><br><span class="line">plane-&gt;x = <span class="number">1.0f</span> * <span class="built_in">cos</span>(Beta) * <span class="built_in">sin</span>(Alpha);</span><br><span class="line">plane-&gt;y = <span class="number">1.0f</span> * <span class="built_in">cos</span>(Beta) * <span class="built_in">cos</span>(Alpha);</span><br><span class="line">plane-&gt;z = <span class="number">1.0f</span> * <span class="built_in">sin</span>(Beta);</span><br></pre></td></tr></table></figure><p>首先，从结果上看，得出来的三坐标分量就是错误的</p><table><thead><tr><th align="center">x分量</th><th align="center">y分量</th><th align="center">z分量</th></tr></thead><tbody><tr><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c2glffxj20wy0pomyg.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c2rnv96j20ws0pwmyg.jpg" width="400px"/></td><td align="center"><img src="http://ww1.sinaimg.cn/large/c3b45047ly1gi9c39g1ayj20wo0q6759.jpg" width="400px"/></td></tr></tbody></table><p>其次，还是可以通过确认单位alpha单位beta围的面积是否是不变的，来确认这样的取值是能够构造指向均匀分布的单位向量。答案是否定的，可以很清楚地看到，当alpha固定，beta越靠近0，$\Delta alpha, \Delta beta$围的面积越大。</p>]]></content>
+      
+      
       <categories>
-        <category>随笔记录</category>
+          
+          <category> 随笔记录 </category>
+          
       </categories>
-      <tags>
-        <tag>c++</tag>
-        <tag>mvs</tag>
-      </tags>
-  </entry>
+      
+      
+        <tags>
+            
+            <tag> c++ </tag>
+            
+            <tag> mvs </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+  
+  
 </search>
