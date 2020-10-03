@@ -131,7 +131,99 @@
   <entry>
     <title>Git Stash和Git Rebase的简单使用</title>
     <url>/blog/2020/09/20/gitStashAndGitRebase/</url>
-    <content><![CDATA[<p>在实习当中经常用到Git，有碰到一些问题在此记录一下，具体Git入门教程可以参考廖雪峰写的教程，这里提及一下我觉得挺好用的两个命令<code>git stash</code>和<code>git rebase</code>。</p>
+    <content><![CDATA[<p>在实习当中经常用到Git，有碰到一些问题在此记录一下，具体Git入门教程可以参考廖雪峰写的<a href="https://www.liaoxuefeng.com/wiki/896043488029600">教程</a>，这里提及一下我觉得挺好用的两个命令<code>git stash</code>和<code>git rebase</code>。再说这两个命令之前，先来回顾一下Git的各个工作区域。</p>
+<h1 id="Git的工作区域和文件状态"><a href="#Git的工作区域和文件状态" class="headerlink" title="Git的工作区域和文件状态"></a>Git的工作区域和文件状态</h1><img src="https://pic.downk.cc/item/5f786c33160a154a67120c8e.png">
+
+<blockquote>
+<p><strong>Workspace：</strong> 工作区，就是你平时存放项目代码的地方</p>
+<p><strong>Index / Stage：</strong> 暂存区，用于临时存放你的改动，事实上它只是一个文件，保存即将提交到文件列表信息</p>
+<p><strong>Repository：</strong> 仓库区（或版本库），就是安全存放数据的位置，这里面有你提交到所有版本的数据。其中HEAD指向最新放入仓库的版本</p>
+<p><strong>Remote：</strong> 远程仓库，托管代码的服务器，可以简单的认为是你项目组中的一台电脑用于远程数据交换</p>
+</blockquote>
+<img src="https://images.weserv.nl/?url=https://i0.hdslb.com/bfs/article/e1fd9e2c2232a653c9e864bb226a785be6a4ad9b.png">
+
+<blockquote>
+<p><strong>Untracked:</strong>  未跟踪, 此文件在文件夹中, 但并没有加入到git库, 不参与版本控制. 通过git add 状态变为Staged.</p>
+<p><strong>Unmodify:</strong>  文件已经入库, 未修改, 即版本库中的文件快照内容与文件夹中完全一致. 这种类型的文件有两种去处, 如果它被修改, 而变为Modified. 如果使用git rm移出版本库, 则成为Untracked文件</p>
+<p> <strong>Modified:</strong> 文件已修改, 仅仅是修改, 并没有进行其他的操作. 这个文件也有两个去处, 通过git add可进入暂存staged状态, 使用git checkout 则丢弃修改过,  返回到unmodify状态, 这个git checkout即从库中取出文件, 覆盖当前修改</p>
+<p><strong>Staged:</strong> 暂存状态. 执行git commit则将修改同步到库中, 这时库中的文件和本地文件又变为一致, 文件为Unmodify状态. 执行git reset HEAD filename取消暂存, 文件状态为Modified</p>
+</blockquote>
+<p>以上内容copy自<a href="https://www.cnblogs.com/qdhxhz/p/9757390.html">这篇文章</a>。这里主要要清楚的是，workspace并不指的是你当前文件夹的所有文件，而是tracked的文件，如果一份新建的文件处于Untracked的状态，那么该文件是不参与版本控制的，后续的<code>git stash</code>操作也自然对他不会起作用。</p>
+<h1 id="Git-Stash"><a href="#Git-Stash" class="headerlink" title="Git Stash"></a>Git Stash</h1><p>假设你现在正在开发一套代码，你也已经有了好几个commit或者是有了好几个版本，这个时候你的上司突然叫你切回原来的稳定版本给别人看一下稳定版本的效果。当然你可以直接<code>git commit</code>当前的工作区，提交一个commit，但是你当前的工作区并不是一个阶段性的小成果，你也不想提交这个从而产生一个没有太多参考价值的trash commit，那么这时<code>git stash</code>就是给你的良药。他的作用是<strong>将你当前的工作区（workspace）和暂存区（Index）打包存好</strong>。</p>
+<p>现在我们开始实验，首先新建个文件夹<code>learnGit</code>，然后用以下指令初始化</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git init</span><br></pre></td></tr></table></figure>
+
+<p>接着我们创建我们的第一个文件夹<code>test1.txt</code>，并往里面写入一些东西</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">touch test1.txt</span><br><span class="line">echo &quot;This is test1.txt&quot; &gt;&gt; test1.txt</span><br></pre></td></tr></table></figure>
+
+<p>我们先提交这个作为第一个commit</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git add .</span><br><span class="line">git commit -m &quot;first commit&quot;</span><br></pre></td></tr></table></figure>
+
+<p>我们按照相同方式再次提交第二个commit</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">echo &quot;Line 2 for test1.txt&quot; &gt;&gt; test1.txt</span><br><span class="line">git add .</span><br><span class="line">git commit -m &quot;second commit&quot;</span><br></pre></td></tr></table></figure>
+
+<p>这时候你接着工作，给<code>test1.txt</code>增加了第三行，并且将更改放到了暂存区；给<code>test1.txt</code>增加了第四行，还没有放到暂存区；新建了一个新文件叫<code>test2.txt</code>，并且给它写了第一行，还没有track这个文件。以上活动为以下指令</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">给test1.txt增加第三行，并放到暂存区</span></span><br><span class="line">echo &quot;Line 3 for test1.txt&quot; &gt;&gt; test1.txt</span><br><span class="line">git add .</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">给test1.txt增加第四行，还没有放到暂存区</span></span><br><span class="line">echo &quot;Line 4 for test1.txt&quot; &gt;&gt; test1.txt</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">新建test2.txt，并写入第一行</span></span><br><span class="line">touch test2.txt</span><br><span class="line">echo &quot;This is test2.txt&quot; &gt;&gt; test2.txt</span><br></pre></td></tr></table></figure>
+
+<p>这个时候使用<code>git status</code>查看一下当前git状态</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">On branch master</span><br><span class="line">Changes to be committed:</span><br><span class="line">  (use &quot;git restore --staged &lt;file&gt;...&quot; to unstage)</span><br><span class="line">        modified:   test1.txt</span><br><span class="line"></span><br><span class="line">Changes not staged for commit:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)</span><br><span class="line">  (use &quot;git restore &lt;file&gt;...&quot; to discard changes in working directory)</span><br><span class="line">        modified:   test1.txt</span><br><span class="line"></span><br><span class="line">Untracked files:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)</span><br><span class="line">        test2.txt</span><br></pre></td></tr></table></figure>
+
+<p>上面三个操作，分别对应着三种文件状态，第一种是已经被放到了暂存区，但还未提交；第二种是更改了还没有放进暂存区，但是文件本身是被track的；第三种就是文件都还未加入到git管理。这三种也典型地代表了几种平时会遇到的几种文件状态。这时候你的上司让你回到第一个commit，想看看那个稳定版本的效果，但是你不想提交当前的，因为什么都还没改完，我们就可以用<code>git stash</code>储存当前的更改</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git stash save &quot;first stash&quot;</span><br></pre></td></tr></table></figure>
+
+<p>输出为</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">Saved working directory and index state On master: first stash</span><br></pre></td></tr></table></figure>
+
+<p>其实看到这行的时候，你就应该意识到问题就出现了，你的<code>test2.txt</code>并没有被track，所以理论上它是没有被存进去的。使用<code>git status</code>查看一下当前的状态</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">On branch master</span><br><span class="line">Untracked files:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)</span><br><span class="line">        test2.txt</span><br><span class="line"></span><br><span class="line">nothing added to commit but untracked files present (use &quot;git add&quot; to track)</span><br></pre></td></tr></table></figure>
+
+<p>确实如你所担心的那样，当前的状态并不干净，<code>test2.txt</code>还在这里，而对<code>test1.txt</code>的两个更改已经消失了（被存进去了），你还是不能这时候回到以前的commit。所以我们先把刚刚储存的弹出，track<code>test2.txt</code>文件，再存进去。先用<code>git stash list</code>看看存了哪些</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">stash@&#123;0&#125;: On master: first stash</span><br></pre></td></tr></table></figure>
+
+<p>如果你之前没有存其他的话，前一个的存储标号应为<code>0</code>，我们用<code>git stash pop stash@&#123;NUM&#125;</code>将其弹出，<code>NUM</code>填写你要弹出的stash</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git stash pop stash@&#123;0&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在的工作区就是你存之前的状态了</p>
+<blockquote>
+<p>stash的使用方法，除了用<code>git stash pop</code>之外还可以用<code>git stash apply</code>，使用方法类似，正如名字所描述的那样，<code>pop</code>直接会将你的stash弹出，而<code>apply</code>则使用当前stash之后还会保留存的stash。</p>
+</blockquote>
+<p>这时候我们用<code>git status</code>查看一下当前的状态</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">On branch master</span><br><span class="line">Changes not staged for commit:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to update what will be committed)</span><br><span class="line">  (use &quot;git restore &lt;file&gt;...&quot; to discard changes in working directory)</span><br><span class="line">        modified:   test1.txt</span><br><span class="line"></span><br><span class="line">Untracked files:</span><br><span class="line">  (use &quot;git add &lt;file&gt;...&quot; to include in what will be committed)</span><br><span class="line">        test2.txt</span><br><span class="line"></span><br><span class="line">no changes added to commit (use &quot;git add&quot; and/or &quot;git commit -a&quot;)</span><br></pre></td></tr></table></figure>
+
+<p>可以看到不一样的在于，之前放到暂存区的<code>test1.txt</code>的第三行，现在也在工作区（workspace）了。</p>
+<p>接下来，我们还来制作stash，将所有的更改放到暂存区，然后再存储stash</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git add .</span><br><span class="line">git stash save &quot;first stash&quot;</span><br></pre></td></tr></table></figure>
+
+<p>用<code>git status</code>查看一下当前状态</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">On branch master</span><br><span class="line">nothing to commit, working tree clean</span><br></pre></td></tr></table></figure>
+
+<p>搞定，就像你什么更改都没做一样，回到了之前的状态，这时候你就可以开心地<code>checkout</code>到其他的提交或者分支了</p>
+<h1 id="Git-Rebase"><a href="#Git-Rebase" class="headerlink" title="Git Rebase"></a>Git Rebase</h1><p>在实习的过程中，碰到了一个很尴尬的问题，我用的是前同事的电脑，在提交修改的时候还没把本机的作者名和邮箱改过来，用的还是前同事的，但是他已经离职了，也就导致那一份提交push不到远程仓库里。这时候就要用<code>git rebase</code>修改以前的提交了。</p>
+<p>还是用前面的Git工作区，用<code>git log</code>查看提交过的commit</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">commit fff69d75f45e1e1689c19d0c12bda7c93584a92f (HEAD -&gt; master)</span><br><span class="line">Author: Ziyun Ge &lt;ziyunge1999@gmail.com&gt;</span><br><span class="line">Date:   Sat Oct 3 18:04:35 2020 +0800</span><br><span class="line"></span><br><span class="line">    second commit</span><br><span class="line"></span><br><span class="line">commit 91496e19a37101cc5ff7e3920c4add1bd926e57b</span><br><span class="line">Author: Ziyun Ge &lt;ziyunge1999@gmail.com&gt;</span><br><span class="line">Date:   Sat Oct 3 18:02:09 2020 +0800</span><br><span class="line"></span><br><span class="line">    first commit</span><br></pre></td></tr></table></figure>
+
+<p>假设我们要更改第二个提交，也就是<code>second commit</code>这一次，将它的作者改为<code>geziyun</code>，邮箱改为<code>ziyun_ge@foxmail.com</code>。</p>
+<p>先使用<code>git rebase -i &lt;COMMIT_ID&gt;</code>，这里的<code>&lt;COMMIT_ID&gt;</code>需要选第一次提交的，它显示的其实是<code>&lt;COMMIT_ID&gt;</code>的提交以及它之后的提交。可以看到以下交互窗口</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">pick fff69d7 second commit</span><br><span class="line"></span><br><span class="line"># Rebase 91496e1..fff69d7 onto 91496e1 (1 command)</span><br><span class="line">#</span><br><span class="line"># Commands:</span><br><span class="line"># p, pick &lt;commit&gt; &#x3D; use commit</span><br><span class="line"># r, reword &lt;commit&gt; &#x3D; use commit, but edit the commit message</span><br><span class="line"># e, edit &lt;commit&gt; &#x3D; use commit, but stop for amending</span><br><span class="line"># s, squash &lt;commit&gt; &#x3D; use commit, but meld into previous commit</span><br><span class="line"># f, fixup &lt;commit&gt; &#x3D; like &quot;squash&quot;, but discard this commit&#39;s log message</span><br><span class="line"># x, exec &lt;command&gt; &#x3D; run command (the rest of the line) using shell</span><br><span class="line"># b, break &#x3D; stop here (continue rebase later with &#39;git rebase --continue&#39;)</span><br><span class="line"># d, drop &lt;commit&gt; &#x3D; remove commit</span><br><span class="line"># l, label &lt;label&gt; &#x3D; label current HEAD with a name</span><br><span class="line"># t, reset &lt;label&gt; &#x3D; reset HEAD to a label</span><br><span class="line"># m, merge [-C &lt;commit&gt; | -c &lt;commit&gt;] &lt;label&gt; [# &lt;oneline&gt;]</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<p>可以看到第二次提交的的Commit ID，我们需要将第一行的<code>pick</code>改为<code>edit</code>，修改方式就跟vim用法一致，接着保存退出。</p>
+<p>接着来更改作者和邮箱</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git commit --amend --author=&quot;geziyun &lt;ziyun_ge@foxmail.com&gt;&quot;</span><br></pre></td></tr></table></figure>
+
+<p>这里我们先暂停一下，看一下这一步做了什么操作。<code>git commit</code>肯定是提交了一个commit，但是是哪里提交呢，可以用<code>git log</code>查看一下。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">commit 90b922390a3fb62a9bc8e5af54e8a7a83f9a08a4 (HEAD)</span><br><span class="line">Author: geziyun &lt;ziyun_ge@foxmail.com&gt;</span><br><span class="line">Date:   Sat Oct 3 18:04:35 2020 +0800</span><br><span class="line"></span><br><span class="line">    second commit</span><br><span class="line"></span><br><span class="line">commit 91496e19a37101cc5ff7e3920c4add1bd926e57b</span><br><span class="line">Author: Ziyun Ge &lt;ziyunge1999@gmail.com&gt;</span><br><span class="line">Date:   Sat Oct 3 18:02:09 2020 +0800</span><br><span class="line"></span><br><span class="line">    first commit</span><br></pre></td></tr></table></figure>
+
+<p>可以有趣地发现，第一次提交还是一样的，但是第二次提交的作者和邮箱都变了，最重要的是第二次提交的Commit ID也变了，也就是说这并不是真正意义上的“第二次提交”。为了更好的阐述这个问题，如果你使用的是VSCode的话，可以下载安装一个插件Git Graph。</p>
+<img src="https://pic.downk.cc/item/5f78652b160a154a671082cb.png">
+
+<p>可以看到我们当前的这次commit其实是在<code>first commit</code>上的另一个分支，原来的<code>second commit</code>在另一个分支（还可以看到之前我们保存的stash）</p>
+<p>接着我们使用以下指令</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">git rebase --continue</span><br></pre></td></tr></table></figure>
+
+<p>可以看到master指针已经指向了你新的提交，注意这里还可以看到老的<code>second commit</code>，这是因为之前的stash是在老的<code>second commit</code>上修改的。你可以使用<code>git stash pop</code>弹出之前储存的stash（没有指定哪个stash的话就默认会弹出最近的一个stash），由于你只改了作者和邮箱，所以你还是不用解冲突。然后你可以惊喜地发现老的<code>second commit</code>不见了，是因为它没有在哪个分支，所以就不显示出来了。如下图，这样我们的作者和邮箱就顺利修改完毕了，可以愉快地push到远程仓库了。</p>
+<img src="https://pic.downk.cc/item/5f786b88160a154a6711e6ae.jpg">
+
+<p>根据上述的描述，其实你大致也可以猜出，<code>git rebase</code>实际上新建一个暂时的分支，然后再那上面修改一些东西（不仅仅可以修改commit的作者，你还可以修改代码细节），最后再和之前的master分支进行合并，当然如果必要的话你还需要解冲突使得合并顺利。</p>
 ]]></content>
       <categories>
         <category>随笔记录</category>

@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://ziyunge1999.github.io/blog/2020/09/20/gitStashAndGitRebase/</loc>
+    
+    <lastmod>2020-10-03</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>http://ziyunge1999.github.io/blog/2020/09/06/constructNormalDistribution/</loc>
     
     <lastmod>2020-10-03</lastmod>
@@ -12,13 +19,6 @@
     <loc>http://ziyunge1999.github.io/blog/2020/08/30/randomInitializationVector/</loc>
     
     <lastmod>2020-10-03</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>http://ziyunge1999.github.io/blog/2020/09/20/gitStashAndGitRebase/</loc>
-    
-    <lastmod>2020-09-20</lastmod>
     
   </url>
   
