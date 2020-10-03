@@ -2,23 +2,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://ziyunge1999.github.io/blog/google381f93bc9d20cd06.html</loc>
+    <loc>http://ziyunge1999.github.io/blog/2020/09/06/constructNormalDistribution/</loc>
     
-    <lastmod>2020-09-07</lastmod>
+    <lastmod>2020-10-03</lastmod>
     
   </url>
   
   <url>
     <loc>http://ziyunge1999.github.io/blog/2020/08/30/randomInitializationVector/</loc>
     
-    <lastmod>2020-09-06</lastmod>
+    <lastmod>2020-10-03</lastmod>
     
   </url>
   
   <url>
-    <loc>http://ziyunge1999.github.io/blog/2020/09/06/constructNormalDistribution/</loc>
+    <loc>http://ziyunge1999.github.io/blog/2020/09/20/gitStashAndGitRebase/</loc>
     
-    <lastmod>2020-09-06</lastmod>
+    <lastmod>2020-09-20</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>http://ziyunge1999.github.io/blog/google381f93bc9d20cd06.html</loc>
+    
+    <lastmod>2020-09-07</lastmod>
     
   </url>
   
@@ -46,7 +53,7 @@
 
   <url>
     <loc>http://ziyunge1999.github.io/blog</loc>
-    <lastmod>2020-09-07</lastmod>
+    <lastmod>2020-10-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -54,14 +61,21 @@
   
   <url>
     <loc>http://ziyunge1999.github.io/blog/tags/c/</loc>
-    <lastmod>2020-09-07</lastmod>
+    <lastmod>2020-10-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>http://ziyunge1999.github.io/blog/tags/%E6%A6%82%E7%8E%87%E8%AE%BA%E4%B8%8E%E6%95%B0%E7%90%86%E7%BB%9F%E8%AE%A1/</loc>
-    <lastmod>2020-09-07</lastmod>
+    <lastmod>2020-10-03</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>http://ziyunge1999.github.io/blog/tags/Git/</loc>
+    <lastmod>2020-10-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -70,7 +84,7 @@
   
   <url>
     <loc>http://ziyunge1999.github.io/blog/categories/%E9%9A%8F%E7%AC%94%E8%AE%B0%E5%BD%95/</loc>
-    <lastmod>2020-09-07</lastmod>
+    <lastmod>2020-10-03</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
